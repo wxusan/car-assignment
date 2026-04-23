@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velocity Drive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --gold:       #c9a227;
+      --gold-dim:   #6b5018;
+      --gold-light: #e8d5b0;
+      --dark:       #080808;
+      --surface:    #0d0d0d;
+      --card:       #111111;
+      --border:     #1c1c1c;
+      --text:       #f0ede6;
+      --muted:      #555555;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    body.snap-lock { overscroll-behavior: none; }
+
+    /* ─── NAV ─────────────────────────────────────────────── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 64px;
+      border-bottom: 1px solid transparent;
+      transition: background 0.4s, padding 0.35s, border-color 0.4s;
+    }
+    .nav.sticky {
+      background: rgba(8,8,8,0.97);
+      border-bottom-color: var(--border);
+      padding: 14px 64px;
+      backdrop-filter: blur(8px);
+    }
+    .logo-wrap { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-name  { display: flex; flex-direction: column; line-height: 1; }
+    .logo-v     { font-family: 'Rajdhani', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 4px; color: #fff; }
+    .logo-d     { font-size: 8px; letter-spacing: 6px; color: var(--gold); margin-top: 4px; }
+    .nav-menu   { display: flex; gap: 38px; list-style: none; }
+    .nav-menu a {
+      color: #555; text-decoration: none; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase;
+      transition: color 0.25s; position: relative; padding-bottom: 4px;
+    }
+    .nav-menu a::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px; background: var(--gold);
+      transform: scaleX(0); transform-origin: center;
+      transition: transform 0.3s;
+    }
+    .nav-menu a:hover { color: #aaa; }
+    .nav-menu a:hover::after,
+    .nav-menu a.active::after { transform: scaleX(1); }
+    .nav-menu a.active { color: var(--gold); }
+    .nav-burger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+    .nav-burger span { width: 22px; height: 1.5px; background: #666; display: block; }
+
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      position: relative; height: 100vh; min-height: 640px;
+      display: flex; align-items: center; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 55% 60% at 72% 55%, #1e1609 0%, transparent 65%),
+        radial-gradient(ellipse 80% 50% at 50% 100%, #120f05 0%, transparent 60%),
+        #050505;
+    }
+    .hero-text {
+      position: relative; z-index: 3; padding-left: 64px; width: 46%;
+      will-change: opacity, transform;
+    }
+    .hero-eyebrow {
+      font-size: 10px; letter-spacing: 5px; color: var(--gold);
+      text-transform: uppercase; margin-bottom: 18px;
+    }
+    .hero-h1 {
+      font-size: 56px; font-weight: 700; line-height: 1.05;
+      margin-bottom: 20px; color: #fff;
+    }
+    .hero-h1 em { font-style: normal; color: var(--gold); }
+    .hero-sub {
+      font-size: 14px; color: #5a5a5a; line-height: 1.85;
+      max-width: 340px; margin-bottom: 40px;
+    }
+    .btn-gold {
+      display: inline-flex; align-items: center; gap: 10px;
+      border: 1px solid var(--gold); color: var(--gold);
+      padding: 14px 30px; font-size: 10px; letter-spacing: 3px;
+      text-transform: uppercase; text-decoration: none; background: transparent;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: background 0.3s, color 0.3s;
+    }
+    .btn-gold:hover { background: var(--gold); color: #000; }
+
+    .hero-car {
+      position: absolute; right: -5%; bottom: 2vh;
+      width: 62%; height: 74%;
+      will-change: transform; z-index: 2;
+      transform-origin: right bottom;
+    }
+    .hero-car img {
+      width: 100%; height: 100%;
+      object-fit: contain; object-position: right bottom;
+      filter: drop-shadow(0 0 80px rgba(201,162,39,0.10));
+      display: block;
+    }
+
+    #smoke-canvas {
+      position: absolute; inset: 0; z-index: 4; pointer-events: none;
+    }
+
+    .scroll-hint {
+      position: absolute; bottom: 32px; left: 64px; z-index: 5;
+      display: flex; align-items: center; gap: 12px;
+      color: #2a2a2a; font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+      animation: hintPulse 2.5s infinite ease-in-out;
+    }
+    .scroll-line { width: 40px; height: 1px; background: #2a2a2a; }
+    @keyframes hintPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* ─── SECTION COMMON ─────────────────────────────────── */
+    section { padding: 108px 64px; }
+    .section-tag {
+      font-size: 10px; letter-spacing: 4px; color: var(--gold);
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .section-h2 { font-size: 36px; font-weight: 700; line-height: 1.15; margin-bottom: 12px; }
+    .section-sub { font-size: 14px; color: var(--muted); line-height: 1.8; }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.75s ease, transform 0.75s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; }
+    .reveal-d2 { transition-delay: 0.2s; }
+    .reveal-d3 { transition-delay: 0.3s; }
+    .reveal-d4 { transition-delay: 0.4s; }
+    .reveal-d5 { transition-delay: 0.5s; }
+
+    /* ─── FEATURED CARS ──────────────────────────────────── */
+    #cars { background: var(--surface); }
+    #cars .sec-head { text-align: center; margin-bottom: 60px; }
+    .cars-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+    }
+    .car-card {
+      background: #0c0c0c; border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; cursor: pointer;
+      transition: border-color 0.35s, transform 0.35s;
+    }
+    .car-card:hover { border-color: #383838; transform: translateY(-6px); }
+    .car-card-img { width: 100%; height: 175px; object-fit: cover; display: block; }
+    .car-card-body { padding: 16px 18px; }
+    .cc-brand  { font-size: 9px; letter-spacing: 2px; color: #333; text-transform: uppercase; margin-bottom: 5px; }
+    .cc-model  { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .cc-sep    { height: 1px; background: var(--border); margin-bottom: 12px; }
+    .cc-stats  { display: flex; gap: 22px; }
+    .cc-stat-label { font-size: 9px; letter-spacing: 1px; color: #383838; text-transform: uppercase; margin-bottom: 4px; }
+    .cc-stat-val   { font-size: 13px; font-weight: 500; color: var(--gold); }
+
+    /* ─── ABOUT ──────────────────────────────────────────── */
+    #about .about-inner { display: flex; gap: 96px; align-items: flex-start; }
+    .about-left { flex: 1; }
+    .about-left .section-sub { max-width: 480px; margin-top: 22px; margin-bottom: 18px; }
+    .about-left .section-sub + .section-sub { margin-top: 14px; margin-bottom: 44px; }
+    .about-stats { display: flex; gap: 52px; }
+    .about-stat-num   { font-size: 38px; font-weight: 700; color: var(--gold); line-height: 1; }
+    .about-stat-label { font-size: 10px; letter-spacing: 2px; color: #383838; text-transform: uppercase; margin-top: 6px; }
+    .about-right { flex: 0 0 260px; padding-top: 8px; }
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .about-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 22px 18px; text-align: center;
+    }
+    .about-item-num   { font-size: 28px; font-weight: 700; color: var(--gold); }
+    .about-item-label { font-size: 9px; letter-spacing: 2px; color: #383838; text-transform: uppercase; margin-top: 6px; }
+
+    /* ─── TEAM ───────────────────────────────────────────── */
+    #team { background: var(--surface); }
+    #team .sec-head { text-align: center; margin-bottom: 60px; }
+    .team-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+      margin-bottom: 44px;
+    }
+    .team-card {
+      background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
+      padding: 30px 16px 24px; text-align: center;
+      transition: border-color 0.35s, transform 0.35s;
+    }
+    .team-card:hover { border-color: #2c2c2c; transform: translateY(-5px); }
+    .team-icon-wrap {
+      width: 58px; height: 58px; border-radius: 50%;
+      background: #161616; border: 1px solid #252525;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .team-icon-wrap svg { width: 22px; height: 22px; stroke: #5a5a5a; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .team-name { font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    .team-role { font-size: 9px; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; }
+    .team-sep  { width: 26px; height: 1px; background: var(--gold-dim); margin: 0 auto 14px; }
+    .team-desc { font-size: 11px; color: #484848; line-height: 1.75; }
+    .team-quote {
+      background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
+      padding: 40px 52px; display: flex; align-items: center; gap: 64px;
+    }
+    .quote-text { flex: 1; }
+    .quote-mark { font-family: Georgia, serif; font-size: 64px; line-height: 0.5; color: var(--gold-dim); margin-bottom: 16px; }
+    .quote-body { font-size: 15px; color: #6a6a6a; line-height: 1.85; font-style: italic; }
+    .quote-car-svg { flex: 0 0 180px; opacity: 0.25; }
+
+    /* ─── CONTACT ────────────────────────────────────────── */
+    #contact .contact-inner { display: flex; gap: 96px; align-items: flex-start; }
+    .contact-left { flex: 1; }
+    .contact-left .section-sub { max-width: 380px; margin-top: 20px; margin-bottom: 44px; }
+    .contact-items { display: flex; flex-direction: column; gap: 14px; }
+    .contact-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 22px 26px; display: flex; align-items: center; gap: 22px;
+    }
+    .contact-icon {
+      width: 44px; height: 44px; background: #161616; border: 1px solid #242424;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .contact-icon svg { width: 18px; height: 18px; stroke: var(--gold); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .contact-meta-label { font-size: 9px; letter-spacing: 2px; color: #363636; text-transform: uppercase; margin-bottom: 5px; }
+    .contact-meta-val   { font-size: 15px; color: var(--gold-light); }
+
+    .contact-right { flex: 0 0 380px; padding-top: 6px; }
+    .contact-form  { display: flex; flex-direction: column; gap: 12px; }
+    .contact-form input,
+    .contact-form textarea {
+      background: var(--card); border: 1px solid var(--border); color: #bbb;
+      padding: 14px 16px; font-size: 13px; border-radius: 6px; outline: none;
+      font-family: 'Inter', sans-serif; transition: border-color 0.25s;
+    }
+    .contact-form input::placeholder,
+    .contact-form textarea::placeholder { color: #333; }
+    .contact-form input:focus,
+    .contact-form textarea:focus { border-color: #2e2e2e; }
+    .contact-form textarea { height: 120px; resize: none; }
+    .btn-send {
+      align-self: flex-start;
+      background: var(--gold); color: #000;
+      border: none; padding: 14px 32px;
+      font-size: 10px; font-weight: 600; letter-spacing: 3px;
+      text-transform: uppercase; font-family: 'Inter', sans-serif;
+      cursor: pointer; border-radius: 3px;
+      transition: opacity 0.2s;
+    }
+    .btn-send:hover { opacity: 0.85; }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--dark);
+    }
+    footer .f-logo { font-family: 'Rajdhani', sans-serif; font-size: 14px; letter-spacing: 4px; color: #222; font-weight: 700; }
+    footer p { font-size: 11px; color: #242424; }
+
+    /* ─── RESPONSIVE (basic) ─────────────────────────────── */
+    @media (max-width: 900px) {
+      .nav { padding: 18px 28px; }
+      .nav.sticky { padding: 12px 28px; }
+      .nav-menu { gap: 20px; }
+      .hero-text { padding-left: 28px; width: 55%; }
+      .hero-h1 { font-size: 36px; }
+      .hero-car { width: 74%; right: -8%; bottom: 8vh; }
+      section { padding: 72px 28px; }
+      .cars-grid { grid-template-columns: repeat(2, 1fr); }
+      .team-grid { grid-template-columns: repeat(2, 1fr); }
+      #about .about-inner { flex-direction: column; gap: 48px; }
+      #about .about-right { flex: none; width: 100%; }
+      #contact .contact-inner { flex-direction: column; gap: 48px; }
+      .contact-right { flex: none; width: 100%; }
+      .team-quote { flex-direction: column; padding: 32px 28px; gap: 32px; }
+      footer { flex-direction: column; gap: 10px; text-align: center; }
+    }
+    @media (max-width: 600px) {
+      .nav-menu { display: none; }
+      .hero-text { width: 100%; }
+      .hero-h1 { font-size: 30px; }
+      .hero-car { width: 108%; right: -12%; bottom: 10vh; opacity: 0.42; }
+      .cars-grid { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr; }
+      .about-stats { flex-wrap: wrap; gap: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════════════════════ -->
+<nav class="nav" id="main-nav">
+  <a href="#home" class="logo-wrap">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+      <polygon points="15,2 27,15 20,15 24,28 4,13 13,13 9,2" fill="#c9a227"/>
+    </svg>
+    <div class="logo-name">
+      <span class="logo-v">VELOCITY</span>
+      <span class="logo-d">· DRIVE ·</span>
+    </div>
+  </a>
+
+  <ul class="nav-menu" id="nav-menu">
+    <li><a href="#home"    class="active" data-section="home">Home</a></li>
+    <li><a href="#cars"    data-section="cars">Cars</a></li>
+    <li><a href="#about"   data-section="about">About Us</a></li>
+    <li><a href="#team"    data-section="team">Our Team</a></li>
+    <li><a href="#contact" data-section="contact">Contact</a></li>
+  </ul>
+
+  <div class="nav-burger"><span></span><span></span><span></span></div>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     HERO
+════════════════════════════════════════════════════════════ -->
+<section class="hero" id="home">
+  <div class="hero-bg"></div>
+  <canvas id="smoke-canvas"></canvas>
+
+  <div class="hero-text" id="hero-text">
+    <div class="hero-eyebrow">Momentum Group &nbsp;·&nbsp; Est. 2026</div>
+    <h1 class="hero-h1">Discover the<br>world of<br><em>supercars</em></h1>
+    <p class="hero-sub">Explore the most iconic supercars, their performance, and the passion behind power.</p>
+    <a href="#cars" class="btn-gold">VIEW CARS &nbsp;›</a>
+  </div>
+
+  <div class="hero-car" id="hero-car">
+    <img
+      src="./assets/side-car.png"
+      alt="Red sports car side view"
+      id="hero-img"
+      onerror="this.style.display='none'"
+    />
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    scroll
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     FEATURED CARS
+════════════════════════════════════════════════════════════ -->
+<section id="cars">
+  <div class="sec-head reveal">
+    <div class="section-tag">Featured Supercars</div>
+    <h2 class="section-h2">Explore Our Top Models</h2>
+    <p class="section-sub">High performance. Timeless design. Pure adrenaline.</p>
+  </div>
+
+  <div class="cars-grid">
+    <div class="car-card reveal reveal-d1">
+      <img class="car-card-img"
+        src="https://images.unsplash.com/photo-1544636331-e26879cd4d9b?auto=format&w=600&q=80"
+        alt="Lamborghini Aventador"
+        onerror="this.style.display='none'"
+      />
+      <div class="car-card-body">
+        <div class="cc-brand">Lamborghini</div>
+        <div class="cc-model">Aventador SVJ</div>
+        <div class="cc-sep"></div>
+        <div class="cc-stats">
+          <div><div class="cc-stat-label">Top Speed</div><div class="cc-stat-val">350 km/h</div></div>
+          <div><div class="cc-stat-label">Power</div><div class="cc-stat-val">770 hp</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="car-card reveal reveal-d2">
+      <img class="car-card-img"
+        src="https://images.unsplash.com/photo-1592198084033-aade902d1aae?auto=format&w=600&q=80"
+        alt="Ferrari SF90"
+        onerror="this.style.display='none'"
+      />
+      <div class="car-card-body">
+        <div class="cc-brand">Ferrari</div>
+        <div class="cc-model">SF90 Stradale</div>
+        <div class="cc-sep"></div>
+        <div class="cc-stats">
+          <div><div class="cc-stat-label">Top Speed</div><div class="cc-stat-val">340 km/h</div></div>
+          <div><div class="cc-stat-label">Power</div><div class="cc-stat-val">1,000 hp</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="car-card reveal reveal-d3">
+      <img class="car-card-img"
+        src="https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&w=600&q=80"
+        alt="Bugatti Chiron"
+        onerror="this.style.display='none'"
+      />
+      <div class="car-card-body">
+        <div class="cc-brand">Bugatti</div>
+        <div class="cc-model">Chiron Super Sport</div>
+        <div class="cc-sep"></div>
+        <div class="cc-stats">
+          <div><div class="cc-stat-label">Top Speed</div><div class="cc-stat-val">440 km/h</div></div>
+          <div><div class="cc-stat-label">Power</div><div class="cc-stat-val">1,600 hp</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="car-card reveal reveal-d4">
+      <img class="car-card-img"
+        src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&w=600&q=80"
+        alt="McLaren 720S"
+        onerror="this.style.display='none'"
+      />
+      <div class="car-card-body">
+        <div class="cc-brand">McLaren</div>
+        <div class="cc-model">720S</div>
+        <div class="cc-sep"></div>
+        <div class="cc-stats">
+          <div><div class="cc-stat-label">Top Speed</div><div class="cc-stat-val">341 km/h</div></div>
+          <div><div class="cc-stat-label">Power</div><div class="cc-stat-val">720 hp</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     ABOUT US
+════════════════════════════════════════════════════════════ -->
+<section id="about">
+  <div class="about-inner">
+    <div class="about-left reveal">
+      <div class="section-tag">Who We Are</div>
+      <h2 class="section-h2">Built by students,<br>driven by passion</h2>
+      <p class="section-sub">Velocity Drive is a student-created informational platform developed as a web design capstone project. We are <strong style="color:#ccc;font-weight:500">Momentum</strong> — a five-member team united by curiosity, creativity, and a deep love for automotive excellence.</p>
+      <p class="section-sub">Our mission: present the world's most iconic supercars in a clean, immersive, and informative digital experience. Engineering specs, design philosophy, and raw performance — all in one place.</p>
+      <div class="about-stats" style="margin-top:44px">
+        <div>
+          <div class="about-stat-num">4</div>
+          <div class="about-stat-label">Brands</div>
+        </div>
+        <div>
+          <div class="about-stat-num">440<span style="font-size:24px">+</span></div>
+          <div class="about-stat-label">km/h max</div>
+        </div>
+        <div>
+          <div class="about-stat-num">5</div>
+          <div class="about-stat-label">Team members</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-right reveal reveal-d2">
+      <div class="about-grid">
+        <div class="about-item">
+          <div class="about-item-num">2026</div>
+          <div class="about-item-label">Founded</div>
+        </div>
+        <div class="about-item">
+          <div class="about-item-num">5</div>
+          <div class="about-item-label">Members</div>
+        </div>
+        <div class="about-item">
+          <div class="about-item-num">4</div>
+          <div class="about-item-label">Car brands</div>
+        </div>
+        <div class="about-item">
+          <div class="about-item-num">1</div>
+          <div class="about-item-label">Passion</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     OUR TEAM
+════════════════════════════════════════════════════════════ -->
+<section id="team">
+  <div class="sec-head reveal">
+    <div class="section-tag">Our Team</div>
+    <h2 class="section-h2">Meet the Minds Behind Momentum</h2>
+    <p class="section-sub">A group of passionate individuals who came together to create Velocity Drive.</p>
+  </div>
+
+  <div class="team-grid">
+
+    <div class="team-card reveal reveal-d1">
+      <div class="team-icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </div>
+      <div class="team-name">Lutfullayev Elyor</div>
+      <div class="team-role">Project Coordinator</div>
+      <div class="team-sep"></div>
+      <div class="team-desc">Coordinated the concept, structure, and overall direction of the Velocity Drive project.</div>
+    </div>
+
+    <div class="team-card reveal reveal-d2">
+      <div class="team-icon-wrap">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      </div>
+      <div class="team-name">Mirpulatova Mubina</div>
+      <div class="team-role">Content Researcher</div>
+      <div class="team-sep"></div>
+      <div class="team-desc">Prepared and organized the written information used for the sports car catalog and all project sections.</div>
+    </div>
+
+    <div class="team-card reveal reveal-d3">
+      <div class="team-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </div>
+      <div class="team-name">Iqbola Maxamadaminova</div>
+      <div class="team-role">Design Support</div>
+      <div class="team-sep"></div>
+      <div class="team-desc">Helped shape the visual style of the website and supported the premium minimal look of the project.</div>
+    </div>
+
+    <div class="team-card reveal reveal-d4">
+      <div class="team-icon-wrap">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <div class="team-name">Miraziz Mirasrorov</div>
+      <div class="team-role">Layout Assistant</div>
+      <div class="team-sep"></div>
+      <div class="team-desc">Worked on the page structure, section planning, and arrangement of the website content.</div>
+    </div>
+
+    <div class="team-card reveal reveal-d5">
+      <div class="team-icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5s7 2 7 5"/><circle cx="17" cy="8" r="2"/><path d="M22 20c0-2.5-2-4-5-4"/></svg>
+      </div>
+      <div class="team-name">Kuychiyeva Ozoda</div>
+      <div class="team-role">Quality &amp; Review</div>
+      <div class="team-sep"></div>
+      <div class="team-desc">Reviewed the content, checked consistency, and ensured the final quality of the website.</div>
+    </div>
+
+  </div>
+
+  <div class="team-quote reveal">
+    <div class="quote-text">
+      <div class="quote-mark">"</div>
+      <p class="quote-body">We built Velocity Drive as a student project to combine our passion for supercars with modern web design. Every pixel reflects our dedication to excellence.</p>
+    </div>
+    <div class="quote-car-svg">
+      <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">
+        <rect x="14" y="78" width="292" height="34" rx="10" fill="#c9a227"/>
+        <path d="M 62,78 L 88,36 L 228,36 L 262,78 Z" fill="#c9a227"/>
+        <path d="M 96,74 L 110,44 L 210,44 L 226,74 Z" fill="#8a6f1a"/>
+        <line x1="160" y1="44" x2="160" y2="74" stroke="#6b5518" stroke-width="1.5"/>
+        <rect x="14" y="84" width="42" height="12" rx="3" fill="#8a6f1a"/>
+        <rect x="262" y="84" width="42" height="12" rx="3" fill="#a07820"/>
+        <circle cx="82" cy="115" r="20" fill="#161616"/>
+        <circle cx="82" cy="115" r="11" fill="#0e0e0e"/>
+        <circle cx="82" cy="115" r="5" fill="#1e1e1e"/>
+        <circle cx="236" cy="115" r="20" fill="#161616"/>
+        <circle cx="236" cy="115" r="11" fill="#0e0e0e"/>
+        <circle cx="236" cy="115" r="5" fill="#1e1e1e"/>
+      </svg>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     CONTACT
+════════════════════════════════════════════════════════════ -->
+<section id="contact">
+  <div class="contact-inner">
+    <div class="contact-left reveal">
+      <div class="section-tag">Get In Touch</div>
+      <h2 class="section-h2">Contact Us</h2>
+      <p class="section-sub">Have questions about our project? Reach out to the Momentum team.</p>
+
+      <div class="contact-items">
+        <div class="contact-item">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <div class="contact-meta-label">Email</div>
+            <div class="contact-meta-val">velocitydrive@momentum.edu</div>
+          </div>
+        </div>
+
+        <div class="contact-item">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.77-.77a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg>
+          </div>
+          <div>
+            <div class="contact-meta-label">Phone</div>
+            <div class="contact-meta-val">+998 90 123 45 67</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-right reveal reveal-d2">
+      <div class="section-tag" style="margin-bottom:20px">Send a Message</div>
+      <form class="contact-form" onsubmit="return false">
+        <input type="text"  placeholder="Your name" />
+        <input type="email" placeholder="Email address" />
+        <textarea placeholder="Your message..."></textarea>
+        <button type="submit" class="btn-send">Send Message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════ -->
+<footer>
+  <span class="f-logo">VELOCITY DRIVE</span>
+  <p>© 2026 Momentum Group &nbsp;·&nbsp; Student Capstone Project</p>
+</footer>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────────────────────
+   1. SHARED ELEMENTS
+───────────────────────────────────────────────────────────── */
+const canvas = document.getElementById('smoke-canvas');
+const ctx = canvas.getContext('2d');
+const carEl = document.getElementById('hero-car');
+const textEl = document.getElementById('hero-text');
+const navEl = document.getElementById('main-nav');
+const wheelSections = Array.from(document.querySelectorAll('section[id]'));
+
+let particles = [];
+let emitRate = 0.55;
+let scrollProg = 0;
+let heroH = 0;
+let snapLock = false;
+let snapReleaseTimer = null;
+
+/* ─────────────────────────────────────────────────────────────
+   2. HERO SMOKE PARTICLE SYSTEM
+───────────────────────────────────────────────────────────── */
+class SmokeParticle {
+  constructor(x, y, boost) {
+    this.x = x + (Math.random() - 0.5) * 36;
+    this.y = y + (Math.random() - 0.5) * 14;
+    this.vx = -(0.25 + Math.random() * 0.7 + boost * 1.2);
+    this.vy = -(0.15 + Math.random() * 0.45);
+    this.life = 0.75 + Math.random() * 0.25;
+    this.decay = 0.006 + Math.random() * 0.010;
+    this.r = 18 + Math.random() * 28;
+    this.grow = 0.35 + Math.random() * 0.5;
+    this.gray = 45 + Math.floor(Math.random() * 45);
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vx *= 0.994;
+    this.vy *= 0.99;
+    this.life -= this.decay;
+    this.r += this.grow;
+  }
+
+  draw() {
+    if (this.life <= 0) return;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.life * 0.22);
+    ctx.fillStyle = `rgb(${this.gray},${this.gray},${this.gray})`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function tirePositions() {
+  const heroBox = document.getElementById('home').getBoundingClientRect();
+  const carBox = carEl.getBoundingClientRect();
+  const tireY = carBox.bottom - heroBox.top - carBox.height * 0.1;
+  return {
+    rear: { x: carBox.left - heroBox.left + carBox.width * 0.19, y: tireY },
+    front: { x: carBox.left - heroBox.left + carBox.width * 0.52, y: tireY }
+  };
+}
+
+function smokeLoop() {
+  requestAnimationFrame(smokeLoop);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const tp = tirePositions();
+  const boost = scrollProg;
+
+  if (Math.random() < emitRate) particles.push(new SmokeParticle(tp.rear.x, tp.rear.y, boost));
+  if (Math.random() < emitRate * 0.28) particles.push(new SmokeParticle(tp.front.x, tp.front.y, boost * 0.6));
+
+  particles = particles.filter(particle => particle.life > 0);
+  particles.forEach(particle => {
+    particle.update();
+    particle.draw();
+  });
+}
+
+function resizeCanvas() {
+  const hero = document.getElementById('home');
+  canvas.width = hero.offsetWidth;
+  canvas.height = hero.offsetHeight;
+}
+
+function measureHero() {
+  heroH = document.getElementById('home').offsetHeight;
+}
+
+function updateOnScroll() {
+  const sy = window.scrollY;
+  navEl.classList.toggle('sticky', sy > 60);
+
+  const progress = Math.min(sy / (heroH * 0.75), 1);
+  scrollProg = progress;
+
+  const tx = progress * 420;
+  const scale = 1 + progress * 0.18;
+  carEl.style.transform = `translateX(${tx}px) scale(${scale})`;
+
+  emitRate = 0.55 + progress * 4.5;
+
+  const fade = Math.max(0, 1 - progress * 2);
+  const drift = -progress * 90;
+  textEl.style.opacity = fade;
+  textEl.style.transform = `translateX(${drift}px)`;
+
+  updateActiveNav();
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4. ACTIVE NAV TRACKING
+───────────────────────────────────────────────────────────── */
+const sectionIds = ['home', 'cars', 'about', 'team', 'contact'];
+
+function updateActiveNav() {
+  const mid = window.scrollY + window.innerHeight * 0.35;
+  let current = 'home';
+  sectionIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= mid) current = id;
+  });
+
+  document.querySelectorAll('.nav-menu a').forEach(anchor => {
+    anchor.classList.toggle('active', anchor.dataset.section === current);
+  });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. SECTION REVEAL
+───────────────────────────────────────────────────────────── */
+const revealObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      revealObs.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+/* ─────────────────────────────────────────────────────────────
+   6. DESKTOP WHEEL SNAP
+───────────────────────────────────────────────────────────── */
+function sectionIndexFromScroll() {
+  const marker = window.scrollY + window.innerHeight * 0.28;
+  let index = 0;
+  wheelSections.forEach((section, idx) => {
+    if (section.offsetTop <= marker) index = idx;
+  });
+  return index;
+}
+
+function snapToSection(index) {
+  const target = wheelSections[Math.max(0, Math.min(index, wheelSections.length - 1))];
+  if (!target) return;
+  snapLock = true;
+  document.body.classList.add('snap-lock');
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.clearTimeout(snapReleaseTimer);
+  snapReleaseTimer = window.setTimeout(() => {
+    snapLock = false;
+    document.body.classList.remove('snap-lock');
+  }, 720);
+}
+
+window.addEventListener('wheel', event => {
+  if (window.innerWidth < 900) return;
+  if (snapLock || Math.abs(event.deltaY) < 3) {
+    event.preventDefault();
+    return;
+  }
+
+  const index = sectionIndexFromScroll();
+  if (event.deltaY > 0 && index < wheelSections.length - 1) {
+    event.preventDefault();
+    snapToSection(index + 1);
+  } else if (event.deltaY < 0 && index > 0) {
+    event.preventDefault();
+    snapToSection(index - 1);
+  }
+}, { passive: false });
+
+/* ─────────────────────────────────────────────────────────────
+   7. BOOTSTRAP
+───────────────────────────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  measureHero();
+});
+
+window.addEventListener('scroll', updateOnScroll, { passive: true });
+
+resizeCanvas();
+measureHero();
+smokeLoop();
+
+window.addEventListener('load', () => {
+  textEl.style.transition = 'opacity 0.9s ease, transform 0.9s ease';
+  textEl.style.opacity = '0';
+  textEl.style.transform = 'translateX(-30px)';
+  requestAnimationFrame(() => {
+    window.setTimeout(() => {
+      textEl.style.opacity = '1';
+      textEl.style.transform = 'translateX(0)';
+    }, 120);
+  });
+  updateActiveNav();
+});
+</script>
+</body>
+</html>
