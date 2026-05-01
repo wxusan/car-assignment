@@ -214,14 +214,25 @@
     .team-role { font-size: 9px; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 10px; }
     .team-sep  { width: 26px; height: 1px; background: var(--gold-dim); margin: 0 auto 14px; }
     .team-desc { font-size: 11px; color: #484848; line-height: 1.75; }
-    .team-quote {
-      background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px;
-      padding: 40px 52px; display: flex; align-items: center; gap: 64px;
+    /* ─── TEAM VIDEO ─────────────────────────────────── */
+    .team-video-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      margin-top: 16px;
     }
-    .quote-text { flex: 1; }
-    .quote-mark { font-family: Georgia, serif; font-size: 64px; line-height: 0.5; color: var(--gold-dim); margin-bottom: 16px; }
-    .quote-body { font-size: 15px; color: #6a6a6a; line-height: 1.85; font-style: italic; }
-    .quote-car-svg { flex: 0 0 180px; opacity: 0.25; }
+    .team-video-label {
+      font-size: 10px; letter-spacing: 4px; color: var(--gold);
+      text-transform: uppercase; margin-bottom: 22px; text-align: center;
+    }
+    .team-video-frame {
+      position: relative; border-radius: 16px; overflow: hidden;
+      border: 1px solid #252525;
+      box-shadow: 0 0 60px rgba(201,162,39,0.07);
+      max-width: 340px; width: 100%;
+    }
+    .team-video-frame video {
+      display: block; width: 100%; height: auto;
+      background: #000;
+    }
 
     /* ─── CONTACT ────────────────────────────────────────── */
     #contact .contact-inner { display: flex; gap: 96px; align-items: flex-start; }
@@ -288,7 +299,7 @@
       #about .about-right { flex: none; width: 100%; }
       #contact .contact-inner { flex-direction: column; gap: 48px; }
       .contact-right { flex: none; width: 100%; }
-      .team-quote { flex-direction: column; padding: 32px 28px; gap: 32px; }
+      .team-video-frame { max-width: 100%; }
       footer { flex-direction: column; gap: 10px; text-align: center; }
     }
     @media (max-width: 600px) {
@@ -556,26 +567,16 @@
 
   </div>
 
-  <div class="team-quote reveal">
-    <div class="quote-text">
-      <div class="quote-mark">"</div>
-      <p class="quote-body">We built Velocity Drive as a student project to combine our passion for supercars with modern web design. Every pixel reflects our dedication to excellence.</p>
-    </div>
-    <div class="quote-car-svg">
-      <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">
-        <rect x="14" y="78" width="292" height="34" rx="10" fill="#c9a227"/>
-        <path d="M 62,78 L 88,36 L 228,36 L 262,78 Z" fill="#c9a227"/>
-        <path d="M 96,74 L 110,44 L 210,44 L 226,74 Z" fill="#8a6f1a"/>
-        <line x1="160" y1="44" x2="160" y2="74" stroke="#6b5518" stroke-width="1.5"/>
-        <rect x="14" y="84" width="42" height="12" rx="3" fill="#8a6f1a"/>
-        <rect x="262" y="84" width="42" height="12" rx="3" fill="#a07820"/>
-        <circle cx="82" cy="115" r="20" fill="#161616"/>
-        <circle cx="82" cy="115" r="11" fill="#0e0e0e"/>
-        <circle cx="82" cy="115" r="5" fill="#1e1e1e"/>
-        <circle cx="236" cy="115" r="20" fill="#161616"/>
-        <circle cx="236" cy="115" r="11" fill="#0e0e0e"/>
-        <circle cx="236" cy="115" r="5" fill="#1e1e1e"/>
-      </svg>
+  <div class="team-video-wrap reveal">
+    <div class="team-video-label">Team Introduction</div>
+    <div class="team-video-frame">
+      <video
+        src="./video-compressed.mp4"
+        controls
+        playsinline
+        preload="metadata"
+        poster=""
+      ></video>
     </div>
   </div>
 </section>
