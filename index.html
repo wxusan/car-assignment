@@ -30,7 +30,6 @@
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
     }
-    body.snap-lock { overscroll-behavior: none; }
 
     /* ─── NAV ─────────────────────────────────────────────── */
     .nav {
@@ -649,14 +648,11 @@ const ctx = canvas.getContext('2d');
 const carEl = document.getElementById('hero-car');
 const textEl = document.getElementById('hero-text');
 const navEl = document.getElementById('main-nav');
-const wheelSections = Array.from(document.querySelectorAll('section[id]'));
 
 let particles = [];
 let emitRate = 0.55;
 let scrollProg = 0;
 let heroH = 0;
-let snapLock = false;
-let snapReleaseTimer = null;
 
 /* ─────────────────────────────────────────────────────────────
    2. HERO SMOKE PARTICLE SYSTEM
@@ -784,48 +780,6 @@ const revealObs = new IntersectionObserver(entries => {
 }, { threshold: 0.12 });
 
 document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-
-/* ─────────────────────────────────────────────────────────────
-   6. DESKTOP WHEEL SNAP
-───────────────────────────────────────────────────────────── */
-function sectionIndexFromScroll() {
-  const marker = window.scrollY + window.innerHeight * 0.28;
-  let index = 0;
-  wheelSections.forEach((section, idx) => {
-    if (section.offsetTop <= marker) index = idx;
-  });
-  return index;
-}
-
-function snapToSection(index) {
-  const target = wheelSections[Math.max(0, Math.min(index, wheelSections.length - 1))];
-  if (!target) return;
-  snapLock = true;
-  document.body.classList.add('snap-lock');
-  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  window.clearTimeout(snapReleaseTimer);
-  snapReleaseTimer = window.setTimeout(() => {
-    snapLock = false;
-    document.body.classList.remove('snap-lock');
-  }, 720);
-}
-
-window.addEventListener('wheel', event => {
-  if (window.innerWidth < 900) return;
-  if (snapLock || Math.abs(event.deltaY) < 3) {
-    event.preventDefault();
-    return;
-  }
-
-  const index = sectionIndexFromScroll();
-  if (event.deltaY > 0 && index < wheelSections.length - 1) {
-    event.preventDefault();
-    snapToSection(index + 1);
-  } else if (event.deltaY < 0 && index > 0) {
-    event.preventDefault();
-    snapToSection(index - 1);
-  }
-}, { passive: false });
 
 /* ─────────────────────────────────────────────────────────────
    7. BOOTSTRAP
